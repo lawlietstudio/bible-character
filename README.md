@@ -15,6 +15,8 @@
 
 做書的次序：從耶利米書起，跟著正典次序往下做（耶利米書 ✔ → 耶利米哀歌 ✔ → 以西結書 ✔ → 何西阿書 ✔ → 約珥書 ✔ → 阿摩司書 ✔ → 俄巴底亞書 → …；但以理書、路得記已完成會跳過）。
 
+**線上版：<https://lawlietstudio.github.io/bible-character/>**（GitHub Pages，每次 push 到 `main` 自動更新）
+
 ## 開啟
 
 純靜態網站，不需要安裝或編譯。
@@ -108,6 +110,14 @@ python scripts/optimize_art.py                        # 輸出到 assets/art-var
 4. `index.html` 加一個 `<script src="data/<書>.cards.js">`（經文檔不用加，會按需載入）
 5. 需要新的卡片屬性顏色時：`data/common.js` 的 `TYPES` 加一項，`css/style.css` 加對應的 `[data-type="…"]` 顏色
 6. `node scripts/validate.js`，再用瀏覽器看一遍（尤其是卡面文字有沒有擠出來）
+7. `git add -A && git commit && git push`：GitHub Actions 會自動驗證並部署（見下）
+
+## 部署（CI/CD）
+
+`.github/workflows/pages.yml`：push 到 `main` 時先跑 `node scripts/validate.js`（經文引用、金句、圖片、卡片連結），**通過才**把網站部署到 GitHub Pages；Pull Request 只跑驗證、不部署。部署時只會帶上瀏覽器需要的檔案（`index.html`、`styles.html`、`css/`、`js/`、`data/`、`assets/`）。
+
+- 原圖 `art/raw/`、`art/raw-variants/`（約 630 MB）和生成記錄 `art/logs/` 在 `.gitignore` 裡，不會上傳；要重新優化圖片就得在本機重新生成。
+- 第一次設定時 Pages 的來源要選「GitHub Actions」（`gh api -X POST repos/<帳號>/<repo>/pages -f build_type=workflow`）。
 
 ## 關於朗讀
 
