@@ -28,6 +28,7 @@ BOOKS = {
     "hosea": ("何", "hosea", 14),
     "joel": ("珥", "joel", 3),
     "amos": ("摩", "amos", 9),
+    "obadiah": ("俄", "obadiah", 1),
 }
 UA = {"User-Agent": "bible-character-site/0.1 (personal study project)"}
 
@@ -65,7 +66,9 @@ def fetch_book(book: str) -> dict:
             "https://bible.fhl.net/json/qb.php?"
             + urllib.parse.urlencode({"chineses": zh_name, "chap": ch, "version": "unv", "gb": 0})
         )
-        en = get_json(f"https://bible-api.com/{slug}+{ch}?translation=web")
+        # bible-api.com reads "obadiah 1" as *verse* 1 for one-chapter books, so ask for the verse range explicitly
+        ref = f"{slug}+{ch}:1-{len(zh['record'])}" if chapters == 1 else f"{slug}+{ch}"
+        en = get_json(f"https://bible-api.com/{ref}?translation=web")
         verses: dict[str, dict] = {}
         for rec in zh["record"]:
             verses[str(rec["sec"])] = {"zh": clean_zh(rec["bible_text"]), "en": ""}
