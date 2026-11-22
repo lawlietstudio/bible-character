@@ -1,0 +1,51 @@
+name: Validate and deploy to GitHub Pages
+
+# Every push to main re-checks the scripture data (refs, exact quotes, art, card links) and, if that passes,
+# publishes the static site. Pull requests only run the validation.
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: true
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - name: Validate cards against the verse text
+        run: node scripts/validate.js
+
+  deploy:
+    needs: validate
+    if: github.event_name != 'pull_request'
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/configure-pages@v5
+      - name: Stage the site (only what the browser needs)
+        run: |
+          mkdir -p _site/art
+          cp -r index.html styles.html css js data assets _site/
+          cp art/styles_compare.jpg _site/art/
+          touch _site/.nojekyll
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: _site
+      - id: deployment
+        uses: actions/deploy-pages@v4

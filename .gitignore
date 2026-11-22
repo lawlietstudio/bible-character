@@ -1,0 +1,12 @@
+# Raw 1536x1024 PNGs from Codex image generation (~630 MB) — the optimized WebP in assets/ is what the site uses
+art/raw/
+art/raw-variants/
+art/logs/
+
+# Local tooling
+.claude/
+__pycache__/
+*.pyc
+node_modules/
+.DS_Store
+Thumbs.db

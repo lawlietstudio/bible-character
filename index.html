@@ -1,0 +1,82 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>聖經人物卡 · Bible Character Cards</title>
+  <meta name="description" content="用人物卡認識聖經：中英對照、圖文並茂。第一部：但以理書。">
+  <meta name="theme-color" content="#0d1022">
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' rx='22' fill='%23e8c46c'/%3E%3Ctext x='50' y='68' font-size='56' text-anchor='middle'%3E%F0%9F%8E%B4%3C/text%3E%3C/svg%3E">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,600;0,700;1,600;1,700&family=Inter:wght@400;500;600;700;800&family=Noto+Sans+TC:wght@400;500;700;900&family=Noto+Serif+TC:wght@500;600;700;900&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body data-lang="both" data-view="cards">
+
+  <header class="site-header">
+    <div class="in">
+      <a class="brand" href="#cards" aria-label="聖經人物卡 首頁">
+        <span class="brand-mark" aria-hidden="true">🎴</span>
+        <span><b>聖經人物卡</b><small>Bible Character Cards</small></span>
+      </a>
+      <label class="book-pick" title="選擇書卷 Choose a book"><span aria-hidden="true">📖</span><select id="book-select" aria-label="書卷 Book"></select></label>
+      <nav class="nav" aria-label="主選單">
+        <a href="#cards" id="nav-cards"><span class="zh">卡牌</span><span class="en">Cards</span></a>
+        <a href="#read" id="nav-read"><span class="zh">讀經</span><span class="en">Read</span></a>
+      </nav>
+      <div class="seg" role="group" aria-label="語言 Language">
+        <button type="button" data-lang-btn="both" aria-pressed="true">中英</button>
+        <button type="button" data-lang-btn="zh" aria-pressed="false">中文</button>
+        <button type="button" data-lang-btn="en" aria-pressed="false">EN</button>
+      </div>
+      <button type="button" class="icon-btn" id="settings-btn" aria-haspopup="dialog" aria-expanded="false" aria-controls="settings" title="設定：文字大小、朗讀 · Settings: text size, read aloud">
+        <span class="ico" aria-hidden="true">Aa</span><span class="lbl"><span class="zh">設定</span><span class="en">Settings</span></span>
+      </button>
+      <div class="progress-chip" id="progress" title="在卡片詳情裡按「我已認識這位」來收集 / Mark cards as known in the detail view"></div>
+    </div>
+  </header>
+
+  <main id="app"><noscript>需要啟用 JavaScript 才能顯示卡牌。 Please enable JavaScript to see the cards.</noscript></main>
+
+  <footer class="site-foot">
+    <p>
+      <b>經文 Scripture：</b>中文為《和合本》（CUV，取自信望愛站 bible.fhl.net），英文為 World English Bible（取自 bible-api.com），兩者皆屬公有領域。
+      <span class="en">Chinese: Chinese Union Version (public domain); English: World English Bible (public domain).</span>
+    </p>
+    <p>
+      <b>插畫 Art：</b>全部由 AI（Codex image generation）生成，是畫家式的想像，並非歷史圖像；經文沒有描述的細節（如面容、服飾）皆屬想像。
+      <span class="en">All artwork is AI-generated and imaginative, not historical; details the text does not describe (faces, clothing) are invented.</span>
+    </p>
+    <p><b>說明：</b>人物簡介、「強項／弱點／教訓」為輔助讀經的簡明整理；有不同解釋的地方（如但以理書的四獸、火窯中的第四位，或路得記打穀場一幕）已標明，請以經文及你所在教會的教導為準。
+      <span class="en">Summaries and the “strength / weakness / lesson” lines are study aids; where interpretations differ we say so. Let the text itself — and your own church’s teaching — have the final word.</span></p>
+  </footer>
+
+  <div id="modal-root"></div>
+
+  <div class="settings" id="settings" role="dialog" aria-label="設定 Settings" hidden></div>
+
+  <div class="player" id="player" role="region" aria-label="朗讀控制 Read-aloud controls" hidden>
+    <div class="pl-info"><span class="pl-ico" aria-hidden="true">🔊</span><div><b class="pl-title"></b><small class="pl-sub"></small></div></div>
+    <div class="pl-ctrl">
+      <button type="button" data-tts="prev" aria-label="上一段 Previous" title="上一段 Previous">⏮</button>
+      <button type="button" data-tts="toggle" class="pl-main" aria-label="暫停／繼續 Pause / resume" title="暫停／繼續 Pause / resume">⏸</button>
+      <button type="button" data-tts="next" aria-label="下一段 Next" title="下一段 Next">⏭</button>
+      <button type="button" data-tts="speed" class="pl-speed" aria-label="朗讀速度 Speed" title="朗讀速度 Speed">1×</button>
+      <button type="button" data-tts="stop" aria-label="停止 Stop" title="停止 Stop">⏹</button>
+    </div>
+  </div>
+
+  <script src="data/common.js"></script>
+  <script src="data/daniel.cards.js"></script>
+  <script src="data/ruth.cards.js"></script>
+  <script src="data/jeremiah.cards.js"></script>
+  <script src="data/lamentations.cards.js"></script>
+  <script src="data/ezekiel.cards.js"></script>
+  <script src="data/hosea.cards.js"></script>
+  <script src="data/joel.cards.js"></script>
+  <script src="data/amos.cards.js"></script>
+  <script src="js/tts.js"></script>
+  <script src="js/app.js"></script>
+</body>
+</html>

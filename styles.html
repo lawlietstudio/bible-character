@@ -1,0 +1,63 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>畫風比較 · Art style comparison</title>
+  <style>
+    :root { --bg: #0d1022; --ink: #efe9da; --dim: #aab1d2; --gold: #e8c46c; --line: rgba(255,255,255,.12); }
+    * { box-sizing: border-box; }
+    body { margin: 0; background: radial-gradient(1000px 600px at 90% -10%, rgba(120,90,200,.25), transparent 60%), var(--bg); color: var(--ink); font: 16px/1.6 "Noto Sans TC", "Microsoft JhengHei", system-ui, sans-serif; }
+    main { max-width: 1280px; margin: 0 auto; padding: 36px 20px 80px; }
+    h1 { margin: 0 0 6px; font: 900 32px/1.2 "Noto Serif TC", serif; }
+    p.lead { color: var(--dim); margin: 0 0 26px; max-width: 70ch; }
+    .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(380px, 1fr)); gap: 22px; }
+    figure { margin: 0; border: 1px solid var(--line); border-radius: 16px; overflow: hidden; background: rgba(255,255,255,.04); }
+    figure img { display: block; width: 100%; aspect-ratio: 3 / 2; object-fit: cover; cursor: zoom-in; }
+    figcaption { padding: 12px 16px 14px; display: grid; gap: 4px; }
+    figcaption b { font-size: 18px; }
+    figcaption b small { color: var(--gold); font: 700 12px/1 system-ui; letter-spacing: .08em; margin-right: 8px; }
+    figcaption span { color: var(--dim); font-size: 14px; }
+    figcaption a { color: var(--gold); text-decoration: none; font-weight: 700; font-size: 14px; }
+    figcaption a:hover { text-decoration: underline; }
+    figure.cur { border-color: var(--gold); }
+    .lightbox { position: fixed; inset: 0; background: rgba(5,7,18,.92); display: none; place-items: center; z-index: 9; padding: 20px; cursor: zoom-out; }
+    .lightbox.on { display: grid; }
+    .lightbox img { max-width: 100%; max-height: 100%; border-radius: 12px; }
+  </style>
+</head>
+<body>
+<main>
+  <h1>畫風比較 · 但以理向耶路撒冷禱告</h1>
+  <p class="lead">同一個角色、同一個場景，用不同畫風畫出來。點圖放大；點「看成卡片」會用這個畫風顯示整張但以理卡（其他卡仍是原本畫風）。選好告訴我編號就可以。</p>
+  <div class="grid" id="grid"></div>
+</main>
+<div class="lightbox" id="lb"><img alt=""></div>
+<script>
+  const STYLES = [
+    { id: "", n: 0, zh: "目前的畫風：90 年代復古賽璐珞", en: "Current style — 1990s retro cel anime", note: "全部卡牌都用這個畫風（2026-11-22 選定）。" },
+    { id: "anime_film", n: 1, zh: "現代動畫電影風", en: "Anime feature-film look", note: "線條乾淨、背景細緻、光影有電影感；最接近「新海誠式」的氛圍。" },
+    { id: "watercolor", n: 2, zh: "手繪水彩動畫繪本風", en: "Hand-painted watercolor storybook", note: "水彩質感、圓潤親切，溫暖懷舊。" },
+    { id: "gacha", n: 3, zh: "手遊角色立繪風", en: "Mobile-game (gacha) art", note: "線條銳利、賽璐珞上色、服飾華麗，像抽卡遊戲的角色圖。" },
+    { id: "chibi", n: 4, zh: "Q 版可愛風", en: "Chibi / kawaii", note: "大頭小身、粉嫩色，最可愛；適合輕鬆的收集卡感。" },
+    { id: "painterly", n: 5, zh: "歐美插畫風（原本的畫風）", en: "Painterly storybook (the original)", note: "Pokémon TCG Pocket 式的厚塗插畫，寫實偏多；已備份。" },
+    { id: "manga_mono", n: 6, zh: "日式漫畫（黑白網點）", en: "Manga ink & screentone", note: "黑白、網點、速度線；卡面會變成單色。" },
+    { id: "ukiyoe", n: 7, zh: "浮世繪木刻版畫風", en: "Ukiyo-e woodblock print", note: "平塗色塊、粗黑線、和紙質感；最有傳統日本味。" }
+  ];
+  const grid = document.getElementById("grid"), lb = document.getElementById("lb");
+  for (const s of STYLES) {
+    const src = s.id ? `assets/art-variants/${s.id}/daniel/daniel.webp` : "assets/art/daniel/daniel.webp";
+    const f = document.createElement("figure");
+    if (!s.id) f.className = "cur";
+    f.innerHTML = `<img src="${src}" alt="${s.zh}" loading="lazy">
+      <figcaption><b><small>${s.n === 0 ? "目前" : "No. " + s.n}</small>${s.zh}</b><span>${s.en}</span><span>${s.note}</span>
+      <a href="index.html${s.id ? "?style=" + s.id : ""}#card/daniel" target="_blank" rel="noopener">看成卡片 →</a></figcaption>`;
+    f.querySelector("img").addEventListener("click", (e) => { lb.querySelector("img").src = e.target.src; lb.classList.add("on"); });
+    f.querySelector("img").addEventListener("error", () => { f.style.opacity = ".4"; f.querySelector("span").textContent += "（尚未生成）"; });
+    grid.appendChild(f);
+  }
+  lb.addEventListener("click", () => lb.classList.remove("on"));
+  document.addEventListener("keydown", (e) => { if (e.key === "Escape") lb.classList.remove("on"); });
+</script>
+</body>
+</html>
