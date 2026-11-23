@@ -40,6 +40,8 @@ BOOKS = {
     "obadiah": ("OBA", 1),
     "jonah": ("JON", 4),
     "micah": ("MIC", 7),
+    "nahum": ("NAM", 3),
+    "habakkuk": ("HAB", 3),
 }
 
 HEADER = """\

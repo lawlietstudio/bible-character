@@ -31,6 +31,8 @@ BOOKS = {
     "obadiah": ("俄", "obadiah", 1),
     "jonah": ("拿", "jonah", 4),
     "micah": ("彌", "micah", 7),
+    "nahum": ("鴻", "nahum", 3),
+    "habakkuk": ("哈", "habakkuk", 3),
 }
 UA = {"User-Agent": "bible-character-site/0.1 (personal study project)"}
 
