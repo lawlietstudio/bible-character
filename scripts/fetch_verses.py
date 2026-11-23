@@ -37,6 +37,11 @@ BOOKS = {
     "haggai": ("該", "haggai", 2),
     "zechariah": ("亞", "zechariah", 14),
     "malachi": ("瑪", "malachi", 4),
+    "matthew": ("太", "matthew", 28),
+    "mark": ("可", "mark", 16),
+    "luke": ("路", "luke", 24),
+    "john": ("約", "john", 21),
+    "acts": ("徒", "acts", 28),
 }
 UA = {"User-Agent": "bible-character-site/0.1 (personal study project)"}
 

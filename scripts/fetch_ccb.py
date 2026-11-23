@@ -46,6 +46,11 @@ BOOKS = {
     "haggai": ("HAG", 2),
     "zechariah": ("ZEC", 14),
     "malachi": ("MAL", 4),
+    "matthew": ("MAT", 28),
+    "mark": ("MRK", 16),
+    "luke": ("LUK", 24),
+    "john": ("JHN", 21),
+    "acts": ("ACT", 28),
 }
 
 HEADER = """\
@@ -114,7 +119,9 @@ def fetch_book(book: str) -> None:
         miss = [v for v in want if v not in verses]
         extra = [v for v in verses if v not in want]
         if miss:
-            problems.append(f"{book} {ch}: 當代譯本 has no verse {miss}")
+            problems.append(f"{book} {ch}: 當代譯本 has no verse {miss} (placeholder written)")
+            for v in miss:
+                verses[v] = "（當代譯本沒有這一節）"
         if extra:
             problems.append(f"{book} {ch}: 當代譯本 has extra verse {extra} (not in 和合本)")
         empty = [v for v, s in verses.items() if not s]
