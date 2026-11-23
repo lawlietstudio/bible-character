@@ -29,6 +29,7 @@ BOOKS = {
     "joel": ("珥", "joel", 3),
     "amos": ("摩", "amos", 9),
     "obadiah": ("俄", "obadiah", 1),
+    "jonah": ("拿", "jonah", 4),
 }
 UA = {"User-Agent": "bible-character-site/0.1 (personal study project)"}
 

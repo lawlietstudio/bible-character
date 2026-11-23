@@ -38,6 +38,7 @@ BOOKS = {
     "joel": ("JOL", 3),
     "amos": ("AMO", 9),
     "obadiah": ("OBA", 1),
+    "jonah": ("JON", 4),
 }
 
 HEADER = """\
