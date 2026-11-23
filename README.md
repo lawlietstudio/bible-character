@@ -34,6 +34,7 @@ python -m http.server 5173
 - **書卷切換**：頁首的 📖 下拉選單，按「歷史書／先知書…」分組、依正典次序排列；網站記得你上次看的書卷。網址：`#cards/<書>`、`#read/<書>/<章>`、`#card/<卡id>`
 - **按需載入**：每卷的經文（`data/<書>.text.js`）只在你第一次進入那卷書時才載入，所以書卷再多也不會拖慢首頁
 - **長篇書卷**（超過 16 章，如耶利米書 52 章）：章節地圖改為緊湊的數字格（數字旁是該章的卡數），讀經頁改用「← 章節下拉選單 →」跳章
+- **中文譯本**：經文除了《和合本》，每節下面還有一行白話意譯的《當代譯本》（Biblica 開放版），好讀得多；設定裡可選「和合本＋當代／只看和合本／只看當代譯本」。朗讀時除非選「只看和合本」，都讀當代譯本。當代譯本是自由度較大的意譯，細讀時請對照和合本
 - 卡牌牆：按類別、章節地圖、關鍵字篩選；可按書中次序、稀有度、出場節數排序
 - 卡面：屬性、出場節數、兩項關鍵事蹟（附經文出處）、強項／弱點、金句、稀有度（◆ → ★ → ♛）；滑鼠移上去有 3D 傾斜與閃卡效果
 - 詳情視窗：簡介、關鍵事蹟、**經文中英對照**、教訓、讀經小貼士、相關人物（← → 鍵切換，Esc 關閉）
@@ -56,7 +57,8 @@ js/app.js               渲染、篩選、詳情視窗、讀經頁、路由、�
 js/tts.js               朗讀引擎（排隊、切句、暫停／上下段、揀語音；與聖經內容無關）
 data/common.js          共用：屬性（TYPES）、類別（KINDS）
 data/<書>.cards.js      ★ 該書的資料與全部人物卡內容（中英）
-data/<書>.text.js       該書經文全文（由腳本產生，勿手改；按需載入，不用寫進 index.html）
+data/<書>.text.js       該書經文全文（和合本＋WEB，由腳本產生，勿手改；按需載入，不用寫進 index.html）
+data/<書>.ccb.js        該書《當代譯本》白話意譯（Biblica 開放版，CC BY-SA 4.0，由 fetch_ccb.py 產生，勿手改；隨經文一起按需載入，缺少時網站照常運作）
 assets/art/<書>/        網頁用插畫（WebP）
 art/raw/<書>/           Codex 生成的原圖（PNG，約 3 MB 一張）
 scripts/                見下
@@ -68,6 +70,7 @@ scripts/                見下
 # 1. 抓經文（和合本繁體 + World English Bible，皆公有領域）
 python scripts/fetch_verses.py ruth
 node scripts/show.js ruth 1:1-22          # 把經文印出來細讀（寫卡之前先讀！）
+python scripts/fetch_ccb.py ruth          # 白話意譯：當代譯本開放版（--all 全部書卷）；會核對節數是否和和合本一致
 
 # 2. 寫／改人物卡內容：data/<書>.cards.js
 #    經文引用只寫章節（如 "6:10"、"3:16-18"），網頁會自動帶出中英經文；
@@ -105,7 +108,7 @@ python scripts/optimize_art.py                        # 輸出到 assets/art-var
 
 ## 加入新書卷
 
-1. `scripts/fetch_verses.py` 的 `BOOKS` 加上該書（FHL 簡稱、bible-api 名稱、章數），執行並讀一遍經文
+1. `scripts/fetch_verses.py` 的 `BOOKS` 加上該書（FHL 簡稱、bible-api 名稱、章數），執行並讀一遍經文；`scripts/fetch_ccb.py` 的 `BOOKS` 也加上該書（ebible.org 的 USFM 代號，如 JON、MIC、NAM）並執行，取得當代譯本（`validate.js` 會檢查它和和合本逐節對得上）
 2. 新增 `data/<書>.cards.js`：`window.BOOKS.push({ id, zh, en, abbr, order（正典第幾卷）, section:{zh,en}（歷史書／先知書…）, chapters, fan:[3 個卡 id], summary, outline（每章一個標題）, notes })` 和 `window.CARDS.push(...)`（卡 id 在所有書卷之間不可重複；`no` 從 1 起連號）
 3. `scripts/art_prompts.json` 的 `books` 加該書的 `setting`（年代、地方的畫風）和每張卡的 `scenes`，生成插畫
 4. `index.html` 加一個 `<script src="data/<書>.cards.js">`（經文檔不用加，會按需載入）
@@ -128,5 +131,7 @@ python scripts/optimize_art.py                        # 輸出到 assets/art-var
 ## 版權與說明
 
 - 中文經文：《和合本》（CUV），來源信望愛站 <https://bible.fhl.net>；英文經文：World English Bible，來源 <https://bible-api.com>。兩者皆屬公有領域。
+- 白話意譯：《聖經，當代譯本開放資源》（Open Chinese Contemporary Bible, Traditional Script），版權所有 © 1979, 2005, 2007, 2012, 2023 Biblica, Inc.，依 [CC BY-SA 4.0](https://creativecommons.org/licenses/by-sa/4.0) 授權，來源 <https://ebible.org/cmncbt/>，原作品在 www.biblica.com 和 open.bible 可以免費使用。本站只把它按節拆開，並移除小標題、註腳符號和詩體換行，用字沒有改動；`data/*.ccb.js` 因此同樣以 CC BY-SA 4.0 分享，每個檔案開頭都有授權聲明（`validate.js` 會檢查聲明還在）。
+  - 為什麼不用《現代中文譯本》或《新普及譯本》？它們也是好讀的意譯，但版權屬於出版機構，沒有開放授權；本站是公開網站，不能直接放進去。想用的話，需要先向版權持有人取得許可。
 - 插畫全部由 AI 生成，是想像而非歷史圖像（尤其面容與服飾）。
 - 人物簡介與「強項／弱點／教訓」是輔助讀經的整理；有不同解釋之處已標明，請以經文為準。

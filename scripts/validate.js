@@ -10,7 +10,7 @@ const dataDir = path.join(__dirname, "..", "data");
 require(path.join(dataDir, "common.js"));
 const only = process.argv[2];
 for (const f of fs.readdirSync(dataDir).sort()) {
-  if (/\.cards\.js$/.test(f) || /\.text\.js$/.test(f)) require(path.join(dataDir, f));
+  if (/\.cards\.js$/.test(f) || /\.text\.js$/.test(f) || /\.ccb\.js$/.test(f)) require(path.join(dataDir, f));
 }
 const { TYPES, KINDS } = window;
 const CARDS = window.CARDS.filter((c) => !only || c.book === only);
@@ -30,6 +30,28 @@ const warn = (id, msg) => { warnings++; console.log(`  ! [${id}] ${msg}`); };
 const stripNotes = (s) => s.replace(/（[^）]*(?:：|節同|下同|同義|或譯|原文|別名|看第|又名|又作|見上節|章.{0,6}節名|見.{1,4}章)[^）]*）/g, "");
 const normEn = (s) => s.replace(/[‘’]/g, "'").replace(/[“”]/g, '"').replace(/\s+/g, " ");
 const normZh = (s) => stripNotes(s).replace(/\s+/g, "");
+
+// 當代譯本 (data/<book>.ccb.js, Biblica Open Chinese Contemporary Bible, CC BY-SA 4.0) is an optional layer. When a file exists it must
+// line up verse-for-verse with the 和合本 text, be plain text, and keep the licence notice at its top (CC BY-SA requires it).
+let ccbBooks = 0, ccbVerses = 0;
+window.BOOKS.filter((b) => !only || b.id === only).forEach((b) => {
+  const file = path.join(dataDir, `${b.id}.ccb.js`);
+  if (!fs.existsSync(file)) { warn(b.id, `no data/${b.id}.ccb.js — the 當代譯本 line will not show for this book (scripts/fetch_ccb.py ${b.id})`); return; }
+  const head = fs.readFileSync(file, "utf8").split("\n").slice(0, 10).join("\n");
+  for (const need of ["Biblica", "CC BY-SA", "open.bible", "Changes made"])
+    if (!head.includes(need)) err(b.id, `${b.id}.ccb.js header lost its licence notice (missing "${need}")`);
+  const cc = (window.BIBLE_CCB || {})[b.id] || {};
+  for (const [ch, vs] of Object.entries(TEXT[b.id] || {})) {
+    for (const v of Object.keys(vs)) {
+      const s = cc[ch] && cc[ch][v];
+      if (typeof s !== "string" || !s.trim()) err(b.id, `當代譯本 missing ${ch}:${v}`);
+      else { ccbVerses++; if (/[<>&* \u0001]/.test(s)) err(b.id, `當代譯本 ${ch}:${v} has stray markup`); }
+    }
+    for (const v of Object.keys(cc[ch] || {})) if (!(v in vs)) err(b.id, `當代譯本 has extra verse ${ch}:${v}`);
+  }
+  for (const ch of Object.keys(cc)) if (!TEXT[b.id][ch]) err(b.id, `當代譯本 has extra chapter ${ch}`);
+  ccbBooks++;
+});
 
 function verses(book, ref) {
   const m = /^(\d+):(\d+)(?:-(\d+))?$/.exec(ref);
@@ -96,5 +118,5 @@ for (const b of BOOKIDS) {
   const nos = CARDS.filter((c) => c.book === b).map((c) => c.no).sort((x, y) => x - y);
   nos.forEach((n, i) => { if (n !== i + 1) err(b, `card numbers not contiguous at ${n}`); });
 }
-console.log(`\n${CARDS.length} cards · ${errors} errors · ${warnings} warnings`);
+console.log(`\n${CARDS.length} cards · 當代譯本 ${ccbVerses} verses in ${ccbBooks} books · ${errors} errors · ${warnings} warnings`);
 process.exit(errors ? 1 : 0);

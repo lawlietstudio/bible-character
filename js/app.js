@@ -6,7 +6,7 @@
   BOOKS.sort((a, b) => (a.order || 999) - (b.order || 999));            // canon order (Ruth 8, Jeremiah 24, Daniel 27 …)
   // The book being shown. setBook() swaps these; everything below reads them as "the current book".
   // Verse text is loaded on demand (data/<book>.text.js) — see loadText().
-  let BOOK = BOOKS[0], TEXT = {}, CARDS = [], TOTAL_VERSES = 0;
+  let BOOK = BOOKS[0], TEXT = {}, CCB = {}, CARDS = [], TOTAL_VERSES = 0;   // CCB = 當代譯本 (optional paraphrase, data/<book>.ccb.js)
   const COMPACT = () => BOOK.chapters > 16;                              // long books get a compact chapter map / chapter jumper
 
   const $ = (s, r = document) => r.querySelector(s);
@@ -24,6 +24,7 @@
     kind: "all", chapter: 0, q: "", sort: "book",
     collected: new Set(store.get("collected", [])),
     fs: Math.min(3, Math.max(0, +store.get("fs", 1) || 0)),          // text-size step, see FS below
+    zhver: ["both", "cuv", "ccb"].includes(store.get("zhver", "both")) ? store.get("zhver", "both") : "both",   // 和合本+當代 | 只和合本 | 只當代
     ttsLang: store.get("ttsLang", "auto"),                            // auto | zh | en | both
     rate: +store.get("rate", 1) || 1,
     voiceZh: store.get("voiceZh", ""), voiceEn: store.get("voiceEn", ""),
@@ -33,17 +34,21 @@
   };
   function attachText() {
     TEXT = (window.BIBLE_TEXT || {})[BOOK.id] || {};
+    CCB = (window.BIBLE_CCB || {})[BOOK.id] || {};
     TOTAL_VERSES = Object.values(TEXT).reduce((n, ch) => n + Object.keys(ch).length, 0);
   }
-  const textLoads = {};
-  function loadText(id) {                                  // inject data/<id>.text.js once
-    if ((window.BIBLE_TEXT || {})[id]) return Promise.resolve();
-    return (textLoads[id] = textLoads[id] || new Promise((resolve, reject) => {
-      const s = document.createElement("script");
-      s.src = `data/${id}.text.js`; s.onload = resolve;
-      s.onerror = () => { delete textLoads[id]; reject(new Error("cannot load " + id)); };
-      document.head.appendChild(s);
-    }));
+  const textLoads = {}, textLoaded = {};
+  const loadScript = (src) => new Promise((resolve, reject) => {
+    const s = document.createElement("script");
+    s.src = src; s.onload = resolve; s.onerror = () => reject(new Error("cannot load " + src));
+    document.head.appendChild(s);
+  });
+  function loadText(id) {                                  // inject data/<id>.text.js (+ the optional .ccb.js) once
+    if (textLoaded[id]) return Promise.resolve();
+    return (textLoads[id] = textLoads[id] || Promise.all([
+      loadScript(`data/${id}.text.js`),
+      loadScript(`data/${id}.ccb.js`).catch(() => {})      // the 當代譯本 layer is optional — the site works without it
+    ]).then(() => { textLoaded[id] = true; }, (e) => { delete textLoads[id]; throw e; }));
   }
   function setBook(id) {
     BOOK = BOOKS.find((b) => b.id === id) || BOOKS[0];
@@ -90,11 +95,12 @@
     if (m) return { zh: `${EXT[m[1]].zh} ${dash(m[2])}`, en: `${EXT[m[1]].en} ${dash(m[2])}` };
     return { zh: `${BOOK.abbr.zh} ${dash(ref)}`, en: `${BOOK.abbr.en} ${dash(ref)}` };
   }
+  const ccb = (ch, v) => (CCB[ch] && CCB[ch][v]) || "";                 // 當代譯本 text of one verse ("" if not available)
   function getVerses(ref) {
     const m = /^(\d+):(\d+)(?:-(\d+))?$/.exec(ref);
     if (!m) return [];
     const [, ch, a, b] = m, out = [];
-    for (let v = +a; v <= +(b || a); v++) { const x = TEXT[ch] && TEXT[ch][v]; if (x) out.push({ n: v, ...x }); }
+    for (let v = +a; v <= +(b || a); v++) { const x = TEXT[ch] && TEXT[ch][v]; if (x) out.push({ n: v, ...x, cc: ccb(ch, v) }); }
     return out;
   }
   function chRange(arr) {
@@ -273,7 +279,7 @@ ${COMPACT() ? `
   }
 
   /* ── reader view ───────────────────────────────────────────────────────── */
-  function linkNames(chNo, zh, en) {
+  function linkNames(chNo, zh, en, cc) {
     const terms = []; // [term, id, lang]
     cardsInChapter(chNo).forEach((c) => {
       (c.names || []).forEach((n) => terms.push([n, c.id, "zh"]));
@@ -286,14 +292,15 @@ ${COMPACT() ? `
       const re = new RegExp("(" + ts.map((t) => t[0].replace(/[.*+?^${}()|[\]\\]/g, "\\$&")).join("|") + ")", "gi");
       return html.replace(re, (m) => `<a class="name" data-card="${map[m.toLowerCase()]}" tabindex="0">${m}</a>`);
     };
-    return [run(zhHTML(zh), "zh"), run(esc(en), "en")];
+    return [run(zhHTML(zh), "zh"), run(esc(en), "en"), cc ? run(zhHTML(cc), "zh") : ""];
   }
   function readerHTML() {
     const n = state.readCh, ch = TEXT[n] || {}, o = BOOK.outline[n - 1];
     const cs = cardsInChapter(n);
     const verses = Object.entries(ch).map(([v, t]) => {
-      const [z, e] = linkNames(n, t.zh, t.en);
-      return `<div class="v" id="v${v}"><div class="vcol"><span class="vn">${v}</span><button class="vplay" type="button" data-play="verse" data-v="${v}" aria-label="從第 ${v} 節開始朗讀 Read aloud from verse ${v}" title="從這節開始朗讀 · Read from here">▶</button></div><p class="vz zh">${z}</p><p class="ve en">${e}</p></div>`;
+      const [z, e, c] = linkNames(n, t.zh, t.en, ccb(n, v));
+      // Chinese cell = 和合本 line (.cu) + 當代譯本 line (.ccb); body[data-zhver] decides which of the two show
+      return `<div class="v" id="v${v}"><div class="vcol"><span class="vn">${v}</span><button class="vplay" type="button" data-play="verse" data-v="${v}" aria-label="從第 ${v} 節開始朗讀 Read aloud from verse ${v}" title="從這節開始朗讀 · Read from here">▶</button></div><div class="vzs zh"><p class="vz cu">${z}</p>${c ? `<p class="vz ccb">${c}</p>` : ""}</div><p class="ve en">${e}</p></div>`;
     }).join("");
     return `
 <section class="reader">
@@ -331,7 +338,7 @@ ${COMPACT() ? `
     const ch = ref.split(":")[0];
     return `<div class="vblock" data-ref="${ref}">
       <div class="vref"><span class="ref">${bi(refLabel(ref))}</span><a href="#read/${BOOK.id}/${ch}"><span class="zh">在第 ${ch} 章閱讀 →</span><span class="en">Read in chapter ${ch} →</span></a></div>
-      ${vs.map((v) => `<div class="vpair"><span class="vn">${v.n}</span><p class="zh">${zhHTML(v.zh)}</p><p class="en">${esc(v.en)}</p></div>`).join("")}
+      ${vs.map((v) => `<div class="vpair"><span class="vn">${v.n}</span><div class="zh vzs"><p class="cu">${zhHTML(v.zh)}</p>${v.cc ? `<p class="ccb">${zhHTML(v.cc)}</p>` : ""}</div><p class="en">${esc(v.en)}</p></div>`).join("")}
     </div>`;
   }
   const spBtn = (sec) => `<button class="sp" type="button" data-play="sec" data-sec="${sec}" aria-label="朗讀這部分 Read this part aloud" title="朗讀這部分 · Read this part aloud">🔊</button>`;
@@ -431,7 +438,7 @@ ${COMPACT() ? `
     else if (a === "read") { if (b && Number.isNaN(+b)) { if (hasBook(b)) want = b; n = c; } else n = b; }   // #read/<book>/<n> | #read/<n>
     else if (a === "cards" && hasBook(b)) want = b;
 
-    if (!(window.BIBLE_TEXT || {})[want]) {      // first visit to this book: fetch its verse text
+    if (!textLoaded[want]) {                     // first visit to this book: fetch its verse text
       if (state.openId) closeModal();
       $("#app").innerHTML = `<p class="loading"><span class="zh">載入中…</span><span class="en">Loading…</span></p>`;
       try { await loadText(want); }
@@ -514,6 +521,10 @@ ${COMPACT() ? `
     { k: "auto", zh: "跟隨顯示語言", en: "Match display" }, { k: "both", zh: "中英輪流", en: "Both, in turn" },
     { k: "zh", zh: "只讀中文", en: "Chinese only" }, { k: "en", zh: "只讀英文", en: "English only" }
   ];
+  const ZHVERS = [
+    { k: "both", zh: "和合本＋當代", en: "Both" }, { k: "cuv", zh: "只看和合本", en: "和合本 only" },
+    { k: "ccb", zh: "只看當代譯本", en: "當代 only" }
+  ];
   const SAMPLE = { zh: "但以理卻立志不以王的膳和王所飲的酒玷污自己。", en: "But Daniel purposed in his heart that he would not defile himself." };
   const RATES = [0.7, 0.85, 1, 1.15, 1.3, 1.5];
   const fmtRate = (r) => `${+r.toFixed(2)}×`;
@@ -536,6 +547,11 @@ ${COMPACT() ? `
   </div>
   <p class="set-sample"><span class="zh">${SAMPLE.zh}</span><span class="en">${SAMPLE.en}</span></p>
   <p class="set-note"><span class="zh">套用於經文、簡介、詳情視窗和讀經頁。卡面文字大小固定，想看大字請點開卡片。</span><span class="en">Applies to scripture, intros, card details and the reader. Card faces stay fixed — open a card to read it larger.</span></p>
+</section>
+<section class="set-sec">
+  <h4>📖 <span class="zh">中文譯本</span><span class="en">Chinese version</span></h4>
+  <div class="seg4" role="group" aria-label="中文譯本 Chinese version">${ZHVERS.map((l) => `<button type="button" data-zhpick="${l.k}" aria-pressed="${l.k === state.zhver}"><span class="zh">${l.zh}</span><span class="en">${l.en}</span></button>`).join("")}</div>
+  <p class="set-note"><span class="zh">和合本逐字忠實、用語古雅；當代譯本（Biblica 開放版）是白話意譯，較易讀，但用字較自由，細讀時請對照和合本。朗讀時，除非選「只看和合本」，都讀當代譯本。</span><span class="en">The 和合本 (CUV) is close to the original wording but dated in style; the 當代譯本 (Biblica Open Chinese Contemporary Bible) is a plain-language paraphrase — easier to read but freer in wording, so compare it with the 和合本 when you study closely. Read-aloud uses the 當代譯本 unless you choose “和合本 only”.</span></p>
 </section>
 <section class="set-sec set-tts">
   <h4>🔊 <span class="zh">朗讀</span><span class="en">Read aloud</span></h4>
@@ -565,12 +581,19 @@ ${COMPACT() ? `
     state.fs = i; store.set("fs", i); applyFs();
     $$("[data-fs]").forEach((b) => b.setAttribute("aria-pressed", String(+b.dataset.fs === i)));
   }
+  function setZhVer(v) {
+    state.zhver = v; store.set("zhver", v);
+    document.body.dataset.zhver = v;
+    $$("[data-zhpick]").forEach((b) => b.setAttribute("aria-pressed", String(b.dataset.zhpick === v)));
+  }
   function syncTts() {
     TTS.prefs.rate = state.rate; TTS.prefs.voiceZh = state.voiceZh; TTS.prefs.voiceEn = state.voiceEn;
   }
 
   /* ── read aloud: build the things to speak ─────────────────────────────── */
   const plain = (s) => s.replace(NOTE_RE, "");            // drop 和合本 footnotes
+  // which Chinese to speak: 和合本 only when that's all the reader chose; otherwise the plainer 當代譯本 (if this verse has one)
+  const speakZh = (zh, cc) => plain(state.zhver !== "cuv" && cc ? cc : zh);
   function parts(zh, en) {
     const mode = state.ttsLang === "auto" ? state.lang : state.ttsLang;
     const z = { lang: "zh", text: zh }, e = { lang: "en", text: en };
@@ -593,7 +616,7 @@ ${COMPACT() ? `
       if (+v < from) continue;
       out.push({
         el: document.getElementById("v" + v), label: { zh: `${BOOK.zh} ${n}:${v}`, en: `${BOOK.en} ${n}:${v}` },
-        parts: parts(plain(t.zh), t.en)
+        parts: parts(speakZh(t.zh, ccb(n, v)), t.en)
       });
     }
     return out;
@@ -610,7 +633,7 @@ ${COMPACT() ? `
     c.keyVerses.forEach((ref) => {
       const el = root.querySelector(`.vblock[data-ref="${ref}"]`), vs = getVerses(ref); if (!el || !vs.length) return;
       const rs = refSpeech(ref), rl = refLabel(ref);
-      items.push({ sec: "verses", el, label: L(rl.zh, rl.en), parts: parts(`${rs.zh}。${vs.map((v) => plain(v.zh)).join("")}`, `${rs.en}. ${vs.map((v) => v.en).join(" ")}`) });
+      items.push({ sec: "verses", el, label: L(rl.zh, rl.en), parts: parts(`${rs.zh}。${vs.map((v) => speakZh(v.zh, v.cc)).join("")}`, `${rs.en}. ${vs.map((v) => v.en).join(" ")}`) });
     });
     items.push({ sec: "lesson", el: $(".lesson", root), label: L("生命教訓", "Lesson"), parts: parts(`生命教訓。${c.lesson.zh}`, `Lesson. ${c.lesson.en}`) });
     items.push({ sec: "tip", el: $(".tip", root), label: L("讀經小貼士", "Reading tip"), parts: parts(`讀經小貼士。${c.tip.zh}`, `Reading tip. ${c.tip.en}`) });
@@ -664,6 +687,7 @@ ${COMPACT() ? `
     if (t.closest('[data-act="settings-close"]')) return closeSettings();
     if (settingsOpen() && !t.closest("#settings")) closeSettings();       // click outside closes it, then carry on
     const fsb = t.closest("[data-fs]"); if (fsb) return setFs(+fsb.dataset.fs);
+    const zvb = t.closest("[data-zhpick]"); if (zvb) return setZhVer(zvb.dataset.zhpick);
     const tl = t.closest("[data-ttslang]"); if (tl) {
       state.ttsLang = tl.dataset.ttslang; store.set("ttsLang", state.ttsLang);
       $$("[data-ttslang]").forEach((b) => b.setAttribute("aria-pressed", String(b === tl))); return;
@@ -755,6 +779,7 @@ ${COMPACT() ? `
   /* ── go ────────────────────────────────────────────────────────────────── */
   applyFs();
   syncTts();
+  document.body.dataset.zhver = state.zhver;
   setLang(state.lang);
   updateProgress();
   route();                                       // loads the verse text of the current book, then renders
