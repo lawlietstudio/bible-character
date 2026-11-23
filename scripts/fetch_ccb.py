@@ -42,6 +42,10 @@ BOOKS = {
     "micah": ("MIC", 7),
     "nahum": ("NAM", 3),
     "habakkuk": ("HAB", 3),
+    "zephaniah": ("ZEP", 3),
+    "haggai": ("HAG", 2),
+    "zechariah": ("ZEC", 14),
+    "malachi": ("MAL", 4),
 }
 
 HEADER = """\

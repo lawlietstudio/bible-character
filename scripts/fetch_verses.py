@@ -33,6 +33,10 @@ BOOKS = {
     "micah": ("彌", "micah", 7),
     "nahum": ("鴻", "nahum", 3),
     "habakkuk": ("哈", "habakkuk", 3),
+    "zephaniah": ("番", "zephaniah", 3),
+    "haggai": ("該", "haggai", 2),
+    "zechariah": ("亞", "zechariah", 14),
+    "malachi": ("瑪", "malachi", 4),
 }
 UA = {"User-Agent": "bible-character-site/0.1 (personal study project)"}
 
