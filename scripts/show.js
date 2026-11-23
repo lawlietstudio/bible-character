@@ -5,7 +5,7 @@ global.window = {};
 const args = process.argv.slice(2);
 const zhOnly = args.includes("--zh");   // --zh: Chinese only, trimmed to 200 chars per verse
 if (zhOnly) args.splice(args.indexOf("--zh"), 1);
-const book = /^\d/.test(args[0] || "") ? "daniel" : args.shift();
+const book = /^\d+:/.test(args[0] || "") ? "daniel" : args.shift();
 require(`../data/${book}.text.js`);
 const T = window.BIBLE_TEXT[book];
 for (const arg of args) {
